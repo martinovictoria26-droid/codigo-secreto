@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Código Secreto</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #D85A30; --red-light: #FAECE7; --red-dark: #712B13; --red-mid: #993C1D;
+    --blue: #378ADD; --blue-light: #E6F1FB; --blue-dark: #0C447C; --blue-mid: #185FA5;
+    --neutral-bg: #e8e5de; --neutral-text: #444441;
+    --assassin-bg: #1e1e1c; --assassin-text: #f1efe8;
+    --gray-100: #f7f6f2; --gray-200: #eceae3; --gray-300: #d3d1c7;
+    --gray-500: #888780; --gray-700: #444441; --gray-900: #1a1a18;
+    --text: #1a1a18; --text-muted: #5f5e5a; --border: rgba(0,0,0,0.1);
+    --radius: 8px; --radius-lg: 12px;
+    --font-mono: 'Space Mono', monospace; --font-body: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-body); background: var(--gray-100); color: var(--text); min-height: 100vh; padding: 1.5rem 1rem; }
+  .container { max-width: 700px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 1.5rem; }
+  header h1 { font-family: var(--font-mono); font-size: 22px; font-weight: 700; letter-spacing: 2px; color: var(--gray-900); }
+  header p { font-size: 12px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.5px; }
+
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 8px; flex-wrap: wrap; }
+  .team-score { display: flex; align-items: center; gap: 10px; border-radius: var(--radius-lg); padding: 10px 16px; border: 0.5px solid; transition: all 0.3s; }
+  .team-score.idle-red { background: #fff; border-color: var(--border); }
+  .team-score.idle-blue { background: #fff; border-color: var(--border); }
+  .team-score.active-red { background: var(--red); border-color: var(--red); }
+  .team-score.active-blue { background: var(--blue); border-color: var(--blue); }
+  .score-num { font-family: var(--font-mono); font-size: 28px; font-weight: 700; line-height: 1; transition: color 0.3s; }
+  .score-num.red { color: var(--red); } .score-num.blue { color: var(--blue); } .score-num.active { color: #fff; }
+  .score-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; transition: color 0.3s; }
+  .score-label.active { color: rgba(255,255,255,0.75); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; transition: background 0.3s; }
+  .dot.red { background: var(--red); } .dot.blue { background: var(--blue); } .dot.active { background: rgba(255,255,255,0.8); }
+
+  .center-turn { text-align: center; flex: 1; }
+  .turn-pill { display: inline-block; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; transition: all 0.3s; }
+  .turn-pill.red { background: var(--red-light); color: var(--red-dark); }
+  .turn-pill.blue { background: var(--blue-light); color: var(--blue-dark); }
+  .phase-txt { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  .switch-banner { display: none; border-radius: var(--radius-lg); padding: 20px; margin-bottom: 1rem; border: 2px solid; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+  .switch-banner.show { display: flex; }
+  .switch-banner.to-red { background: var(--red-light); border-color: var(--red); color: var(--red-dark); }
+  .switch-banner.to-blue { background: var(--blue-light); border-color: var(--blue); color: var(--blue-dark); }
+  .sb-title { font-family: var(--font-mono); font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .sb-sub { font-size: 12px; opacity: 0.8; margin-bottom: 4px; }
+  .btn-confirm { margin-top: 4px; padding: 10px 24px; border-radius: var(--radius); border: 1.5px solid currentColor; background: transparent; color: inherit; font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; text-transform: uppercase; transition: opacity 0.15s; }
+  .btn-confirm:hover { opacity: 0.7; }
+
+  .hint-panel { background: #fff; border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 1rem; }
+  .hint-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .hint-row input[type=text] { flex: 1; min-width: 140px; padding: 8px 12px; border: 0.5px solid var(--gray-300); border-radius: var(--radius); font-family: var(--font-body); font-size: 13px; color: var(--text); background: var(--gray-100); outline: none; }
+  .hint-row input[type=text]:focus { border-color: var(--gray-500); background: #fff; }
+  .hint-row input[type=number] { width: 60px; padding: 8px 10px; border: 0.5px solid var(--gray-300); border-radius: var(--radius); font-family: var(--font-mono); font-size: 14px; color: var(--text); background: var(--gray-100); outline: none; text-align: center; }
+  .hint-row input[type=number]:focus { border-color: var(--gray-500); background: #fff; }
+  .btn-primary { padding: 8px 16px; border-radius: var(--radius); border: none; background: var(--gray-900); color: #fff; font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.8; }
+  .btn-ghost { padding: 8px 14px; border-radius: var(--radius); border: 0.5px solid var(--gray-300); background: transparent; color: var(--text-muted); font-family: var(--font-body); font-size: 13px; cursor: pointer; transition: background 0.1s; }
+  .btn-ghost:hover { background: var(--gray-200); }
+  .spy-link { font-size: 11px; color: var(--text-muted); cursor: pointer; text-decoration: underline; margin-left: auto; font-family: var(--font-mono); }
+
+  .hint-active { display: none; margin-top: 10px; padding: 8px 12px; border-radius: var(--radius); align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .hint-active.red { background: var(--red-light); color: var(--red-dark); }
+  .hint-active.blue { background: var(--blue-light); color: var(--blue-dark); }
+  .hint-word-display { font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
+  .hint-meta { font-size: 11px; opacity: 0.75; margin-left: 6px; }
+  .pips { display: flex; gap: 4px; }
+  .pip { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.2; transition: opacity 0.2s; }
+  .pip.on { opacity: 1; }
+  .pip.bonus { opacity: 0.45; outline: 1px solid currentColor; outline-offset: 1px; }
+  .btn-pass { padding: 4px 10px; border-radius: var(--radius); border: 1px solid currentColor; background: transparent; color: inherit; font-size: 11px; font-family: var(--font-mono); cursor: pointer; opacity: 0.7; }
+  .btn-pass:hover { opacity: 1; }
+
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 1rem; }
+  .card { border-radius: var(--radius); padding: 10px 6px; text-align: center; font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; border: 0.5px solid var(--border); background: #fff; color: var(--text); min-height: 54px; display: flex; align-items: center; justify-content: center; word-break: break-word; line-height: 1.3; user-select: none; transition: transform 0.1s, border-color 0.15s, background 0.15s; text-transform: uppercase; }
+  .card:hover:not(.revealed):not(.blocked) { transform: translateY(-2px); border-color: var(--gray-500); background: var(--gray-100); }
+  .card.blocked { cursor: default; }
+  .card.revealed { cursor: default; transform: none; }
+  .card.revealed.r { background: var(--red); color: #fff; border-color: var(--red); }
+  .card.revealed.b { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .card.revealed.n { background: var(--neutral-bg); color: var(--neutral-text); border-color: var(--neutral-bg); }
+  .card.revealed.k { background: var(--assassin-bg); color: var(--assassin-text); border-color: var(--assassin-bg); }
+  .card.spy-r { outline: 2px solid var(--red); color: var(--red-mid); }
+  .card.spy-b { outline: 2px solid var(--blue); color: var(--blue-mid); }
+  .card.spy-n { outline: 2px solid var(--gray-300); color: var(--gray-500); }
+  .card.spy-k { outline: 2px solid var(--assassin-bg); color: var(--assassin-bg); }
+
+  .bottom-row { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+
+  .log-box { background: #fff; border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 10px 14px; max-height: 110px; overflow-y: auto; margin-bottom: 1rem; }
+  .log-entry { font-size: 11px; font-family: var(--font-mono); padding: 2px 0; line-height: 1.6; }
+  .log-entry.r { color: var(--red-mid); } .log-entry.b { color: var(--blue-mid); }
+  .log-entry.k { color: var(--assassin-bg); font-weight: 700; } .log-entry.n { color: var(--gray-500); }
+  .log-entry.sys { color: var(--gray-500); font-size: 10px; }
+
+  .rules-section { border-top: 0.5px solid var(--border); padding-top: 1rem; margin-top: 0.5rem; }
+  .rules-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer; background: none; border: none; font-family: var(--font-mono); letter-spacing: 0.3px; }
+  .rules-toggle svg { transition: transform 0.2s; }
+  .rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 12px; }
+  .rule-card { background: var(--gray-100); border-radius: var(--radius); padding: 10px 12px; border: 0.5px solid var(--border); }
+  .rule-title { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.3px; }
+  .rule-body { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+  .cp { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+  .overlay { display: none; min-height: 260px; background: rgba(0,0,0,0.5); border-radius: var(--radius-lg); align-items: center; justify-content: center; margin-bottom: 1rem; }
+  .overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: var(--radius-lg); padding: 2rem 1.5rem; text-align: center; max-width: 300px; border: 0.5px solid var(--border); }
+  .modal-title { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; letter-spacing: 1px; }
+  .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1rem; }
+  .modal-reason { font-size: 12px; margin-bottom: 1.2rem; padding: 8px 12px; border-radius: var(--radius); font-family: var(--font-mono); }
+  .modal-reason.r { background: var(--red-light); color: var(--red-dark); }
+  .modal-reason.b { background: var(--blue-light); color: var(--blue-dark); }
+  .modal-reason.k { background: var(--gray-200); color: var(--gray-700); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>CÓDIGO SECRETO</h1>
+    <p>dos equipos · 25 palabras · un asesino</p>
+  </header>
+
+  <div class="top-bar">
+    <div class="team-score idle-red" id="badge-red">
+      <span class="dot red" id="dot-red"></span>
+      <div><div class="score-num red" id="rc">9</div><div class="score-label" id="lbl-red">Rojo</div></div>
+    </div>
+    <div class="center-turn">
+      <div class="turn-pill red" id="turn-pill">Equipo Rojo</div>
+      <div class="phase-txt" id="phase-txt">Esperando pista del capitán</div>
+    </div>
+    <div class="team-score idle-blue" id="badge-blue">
+      <div style="text-align:right"><div class="score-num blue" id="bc">8</div><div class="score-label" id="lbl-blue">Azul</div></div>
+      <span class="dot blue" id="dot-blue"></span>
+    </div>
+  </div>
+
+  <div class="switch-banner" id="switch-banner">
+    <div class="sb-title" id="sb-title"></div>
+    <div class="sb-sub" id="sb-sub"></div>
+    <button class="btn-confirm" onclick="confirmSwitch()">Entendido, empezamos</button>
+  </div>
+
+  <div class="hint-panel" id="hint-panel">
+    <div class="hint-row">
+      <input type="text" id="hw" placeholder="Palabra pista (capitán)..." />
+      <input type="number" id="hn" min="1" max="9" value="2" />
+      <button class="btn-primary" onclick="giveHint()">Dar pista</button>
+      <span class="spy-link" id="spybtn" onclick="toggleSpy()">mapa secreto</span>
+    </div>
+    <div id="hint-active" class="hint-active red">
+      <div>
+        <span class="hint-word-display" id="ha-word"></span>
+        <span class="hint-meta" id="ha-meta"></span>
+      </div>
+      <div class="pips" id="ha-pips"></div>
+      <button class="btn-pass" onclick="endTurn()">pasar turno</button>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="bottom-row">
+    <button class="btn-ghost" onclick="endTurn()">Pasar turno</button>
+    <button class="btn-ghost" onclick="newGame()">Nueva partida</button>
+  </div>
+
+  <div class="log-box" id="log"></div>
+
+  <div class="rules-section">
+    <button class="rules-toggle" onclick="toggleRules()">
+      <svg id="rules-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      cómo se juega — reglas completas
+    </button>
+    <div id="rules-body" style="display:none">
+      <div class="rules-grid" style="margin-bottom:10px">
+        <div class="rule-card"><div class="rule-title"><span class="cp" style="background:#D85A30"></span>Agentes rojos (9)</div><div class="rule-body">El equipo rojo tiene 9 palabras y empieza primero. Más cartas, más presión.</div></div>
+        <div class="rule-card"><div class="rule-title"><span class="cp" style="background:#378ADD"></span>Agentes azules (8)</div><div class="rule-body">El equipo azul tiene 8 palabras y empieza segundo, con una carta menos.</div></div>
+        <div class="rule-card"><div class="rule-title"><span class="cp" style="background:#B4B2A9"></span>Neutrales (7)</div><div class="rule-body">Tocar una carta neutral pasa el turno al otro equipo de inmediato.</div></div>
+        <div class="rule-card"><div class="rule-title"><span class="cp" style="background:#1e1e1c"></span>El asesino (1)</div><div class="rule-body">Si lo tocás, tu equipo pierde al instante. El peor error del capitán.</div></div>
+      </div>
+      <div class="rules-grid">
+        <div class="rule-card"><div class="rule-title">El capitán</div><div class="rule-body">Da UNA palabra + un número N. No puede ser ninguna del tablero.</div></div>
+        <div class="rule-card"><div class="rule-title">Intentos normales</div><div class="rule-body">El equipo puede tocar exactamente N cartas por turno, ni más ni menos.</div></div>
+        <div class="rule-card"><div class="rule-title">Intento extra (+1)</div><div class="rule-body">Solo si en el turno anterior pasaste sin usar todos tus intentos, el siguiente turno tenés N+1. El extra es por la pista adeudada, no un regalo automático.</div></div>
+        <div class="rule-card"><div class="rule-title">Fin de turno</div><div class="rule-body">Termina al agotar intentos, tocar carta ajena, o pasar voluntariamente.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-title" id="ov-title"></div>
+      <div class="modal-sub" id="ov-sub"></div>
+      <div class="modal-reason" id="ov-reason"></div>
+      <button class="btn-primary" onclick="newGame()">Jugar de nuevo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORDS = ["LUNA","BANCO","PLAYA","PUENTE","RELOJ","TIGRE","NUBE","CLAVE","MESA","VUELO","PIEDRA","CAMPO","ÁRBOL","FARO","SOMBRA","VIENTO","FUEGO","AGUA","TIERRA","ESPEJO","CAMINO","CIUDAD","BARCO","NAVE","LIBRO","TREN","ROSA","PÁJARO","MAPA","TORRE","LAGO","MONTE","PUERTA","VENTANA","SOL","ESTRELLA","VOLCÁN","DESIERTO","SELVA","ISLA","PUÑO","CORONA","ESCUDO","LLAVE","DADO","REY","ROBOT","DRAGÓN","MAGIA","FLECHA","TESORO","MÁSCARA","TRAMPA","PORTAL","CÓDIGO","SELLO","BRILLO","PALOMA","ÁRTICO","VAPOR","CUEVA","BOSQUE","CRISTAL","FUENTE","LOBO","ANCLA","RUEDA","NIEVE","DANZA","PLAZA"];
+
+let G={};
+let spyOn=false;
+let pendingSwitch=false;
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+
+function newGame(){
+  spyOn=false;pendingSwitch=false;
+  document.getElementById('spybtn').textContent='mapa secreto';
+  const words=shuffle(WORDS).slice(0,25);
+  const types=shuffle(['r','r','r','r','r','r','r','r','r','b','b','b','b','b','b','b','b','n','n','n','n','n','n','n','k']);
+  G={words,types,revealed:Array(25).fill(false),turn:'r',rc:9,bc:8,hint:null,guessesLeft:0,hintN:0,bonusNext:{r:false,b:false},over:false};
+  document.getElementById('hint-active').style.display='none';
+  document.getElementById('hw').value='';document.getElementById('hn').value=2;
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('switch-banner').classList.remove('show');
+  document.getElementById('hint-panel').style.display='block';
+  document.getElementById('log').innerHTML='';
+  addLog('sys','-- nueva partida · empieza equipo rojo --');
+  render();
+}
+
+function render(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  G.words.forEach((w,i)=>{
+    const c=document.createElement('div');
+    c.className='card';c.textContent=w;
+    if(G.revealed[i]){c.classList.add('revealed',G.types[i],'blocked');}
+    else if(spyOn){c.classList.add('spy-'+G.types[i]);}
+    if(!G.revealed[i]&&!G.over&&!pendingSwitch)c.addEventListener('click',()=>pick(i));
+    else if(!G.revealed[i])c.classList.add('blocked');
+    grid.appendChild(c);
+  });
+  document.getElementById('rc').textContent=G.rc;
+  document.getElementById('bc').textContent=G.bc;
+
+  const br=document.getElementById('badge-red'),bb=document.getElementById('badge-blue');
+  const dr=document.getElementById('dot-red'),db=document.getElementById('dot-blue');
+  const nr=document.getElementById('rc'),nb=document.getElementById('bc');
+  const lr=document.getElementById('lbl-red'),lb=document.getElementById('lbl-blue');
+  if(!pendingSwitch&&G.turn==='r'){
+    br.className='team-score active-red';dr.className='dot active';nr.className='score-num active';lr.className='score-label active';
+    bb.className='team-score idle-blue';db.className='dot blue';nb.className='score-num blue';lb.className='score-label';
+  } else if(!pendingSwitch&&G.turn==='b'){
+    bb.className='team-score active-blue';db.className='dot active';nb.className='score-num active';lb.className='score-label active';
+    br.className='team-score idle-red';dr.className='dot red';nr.className='score-num red';lr.className='score-label';
+  } else {
+    br.className='team-score idle-red';dr.className='dot red';nr.className='score-num red';lr.className='score-label';
+    bb.className='team-score idle-blue';db.className='dot blue';nb.className='score-num blue';lb.className='score-label';
+  }
+
+  if(!pendingSwitch){
+    const pill=document.getElementById('turn-pill');
+    pill.textContent=G.turn==='r'?'Equipo Rojo':'Equipo Azul';
+    pill.className='turn-pill '+(G.turn==='r'?'red':'blue');
+    const hasBonus=G.bonusNext[G.turn];
+    document.getElementById('phase-txt').textContent=G.hint
+      ?`${G.guessesLeft} intento${G.guessesLeft!==1?'s':''} restante${G.guessesLeft!==1?'s':''}`
+      :(hasBonus?'Tienen +1 intento acumulado de turno anterior':'Esperando pista del capitán');
+  }
+
+  if(G.hint&&!pendingSwitch){
+    const ha=document.getElementById('hint-active');
+    ha.style.display='flex';
+    ha.className='hint-active '+(G.turn==='r'?'red':'blue');
+    document.getElementById('ha-word').textContent=`"${G.hint}"`;
+    const hasBonus=G.guessesLeft>G.hintN;
+    document.getElementById('ha-meta').textContent=hasBonus
+      ?`${G.hintN} + 1 extra (adeudada)`
+      :`${G.guessesLeft} intento${G.guessesLeft!==1?'s':''}`;
+    const pips=document.getElementById('ha-pips');pips.innerHTML='';
+    const total=G.hintN+(hasBonus?1:0);
+    for(let d=0;d<total;d++){
+      const p=document.createElement('span');
+      const isBonus=d===G.hintN;
+      const isUsed=d<G.guessesLeft;
+      p.className='pip'+(isUsed?' on':'')+(isBonus?' bonus':'');
+      pips.appendChild(p);
+    }
+  } else if(!pendingSwitch){
+    document.getElementById('hint-active').style.display='none';
+  }
+}
+
+function addLog(cls,msg){
+  const el=document.createElement('div');el.className='log-entry '+cls;el.textContent=msg;
+  const log=document.getElementById('log');log.appendChild(el);log.scrollTop=log.scrollHeight;
+}
+
+function giveHint(){
+  if(G.over||pendingSwitch)return;
+  if(G.hint){addLog('sys','ya hay pista activa.');return;}
+  const w=document.getElementById('hw').value.trim().toUpperCase();
+  const n=Math.max(1,Math.min(9,parseInt(document.getElementById('hn').value)||1));
+  if(!w){addLog('sys','escribí una palabra pista.');return;}
+  if(G.words.includes(w)){addLog('sys',`"${w}" está en el tablero. no se puede usar como pista.`);return;}
+  G.hint=w;
+  G.hintN=n;
+  const bonus=G.bonusNext[G.turn];
+  G.guessesLeft=bonus?n+1:n;
+  G.bonusNext[G.turn]=false;
+  const bonusTxt=bonus?' (+1 de pista adeudada)':'';
+  addLog(G.turn,`capitán ${G.turn==='r'?'rojo':'azul'}: "${w}" — ${n}${bonusTxt}`);
+  document.getElementById('hw').value='';
+  render();
+}
+
+function pick(i){
+  if(G.over||G.revealed[i]||pendingSwitch)return;
+  if(!G.hint){addLog('sys','el capitán debe dar pista primero.');return;}
+  if(G.guessesLeft<=0){addLog('sys','sin intentos. pasá el turno.');return;}
+  G.revealed[i]=true;
+  const t=G.types[i];
+  const labels={r:'rojo',b:'azul',n:'neutral',k:'asesino'};
+  addLog(t,`${G.turn==='r'?'rojo':'azul'} toca "${G.words[i]}" → ${labels[t]}`);
+  if(t==='r')G.rc--;
+  if(t==='b')G.bc--;
+  if(t==='k'){render();endGame(G.turn==='r'?'b':'r','k');return;}
+  if(G.rc===0){render();endGame('r','done');return;}
+  if(G.bc===0){render();endGame('b','done');return;}
+  if(t===G.turn){
+    G.guessesLeft--;
+    if(G.guessesLeft===0){addLog('sys','intentos agotados.');triggerSwitch('intentos agotados',false);}
+    else render();
+  } else {
+    addLog('sys',`carta ${labels[t]} — turno perdido.`);
+    triggerSwitch('carta '+labels[t],false);
+  }
+}
+
+function endTurn(){
+  if(G.over||pendingSwitch)return;
+  if(!G.hint){addLog('sys','no hay pista activa todavía.');return;}
+  const unused=G.guessesLeft;
+  const bonusTxt=unused>0?` (${unused} intento${unused!==1?'s':''} sin usar — se acumula para el próximo turno)`:'';
+  addLog('sys',`${G.turn==='r'?'rojo':'azul'} pasa el turno.${bonusTxt}`);
+  if(unused>0) G.bonusNext[G.turn]=true;
+  triggerSwitch('turno pasado voluntariamente', unused>0);
+}
+
+function triggerSwitch(reason, hadUnused){
+  pendingSwitch=true;
+  const nextTeam=G.turn==='r'?'EQUIPO AZUL':'EQUIPO ROJO';
+  const nextColor=G.turn==='r'?'to-blue':'to-red';
+  const sb=document.getElementById('switch-banner');
+  sb.className='switch-banner show '+nextColor;
+  document.getElementById('sb-title').textContent=`Turno de ${nextTeam}`;
+  const extra=hadUnused?' El equipo que acaba de pasar tiene un intento acumulado para su próximo turno.':'';
+  document.getElementById('sb-sub').textContent=`Motivo: ${reason}.${extra}`;
+  document.getElementById('hint-panel').style.display='none';
+  document.getElementById('hint-active').style.display='none';
+  const pill=document.getElementById('turn-pill');
+  pill.textContent=G.turn==='r'?'Equipo Azul':'Equipo Rojo';
+  pill.className='turn-pill '+(G.turn==='r'?'blue':'red');
+  document.getElementById('phase-txt').textContent='Confirmar cambio de turno';
+  render();
+}
+
+function confirmSwitch(){
+  G.turn=G.turn==='r'?'b':'r';
+  G.hint=null;G.guessesLeft=0;G.hintN=0;
+  pendingSwitch=false;
+  document.getElementById('switch-banner').classList.remove('show');
+  document.getElementById('hint-panel').style.display='block';
+  render();
+}
+
+function endGame(winner,reason){
+  G.over=true;pendingSwitch=false;
+  document.getElementById('switch-banner').classList.remove('show');
+  document.getElementById('ov-title').textContent=winner==='r'?'GANA ROJO':'GANA AZUL';
+  document.getElementById('ov-sub').textContent=reason==='k'?'El otro equipo tocó al asesino.':'Encontraron todos sus agentes.';
+  const rEl=document.getElementById('ov-reason');
+  rEl.className='modal-reason '+(winner==='r'?'r':'b');
+  rEl.textContent=reason==='done'?`todos los agentes ${winner==='r'?'rojos':'azules'} rescatados.`:`el asesino eliminó al equipo ${winner==='r'?'azul':'rojo'}.`;
+  document.getElementById('overlay').classList.add('show');
+  addLog('sys',`-- fin · gana ${winner==='r'?'rojo':'azul'} --`);
+}
+
+function toggleSpy(){
+  spyOn=!spyOn;
+  document.getElementById('spybtn').textContent=spyOn?'ocultar mapa':'mapa secreto';
+  render();
+}
+
+function toggleRules(){
+  const b=document.getElementById('rules-body'),a=document.getElementById('rules-arrow');
+  const open=b.style.display==='none';
+  b.style.display=open?'block':'none';
+  a.style.transform=open?'rotate(180deg)':'rotate(0)';
+}
+
+newGame();
+</script>
+</body>
+</html>
